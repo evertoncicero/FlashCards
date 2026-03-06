@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0e17" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Flashcards" />
+  <title>Flashcards ✦</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0e17; --surface: #1a1828; --card: #211f35;
+      --accent: #ff6b35; --accent2: #ffd166; --accent3: #06d6a0;
+      --purple: #a855f7; --text: #fffffe; --muted: #a7a9be; --border: #2e2b4a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overscroll-behavior: none; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    input { font-family: 'DM Sans', sans-serif; }
+    button { font-family: 'DM Sans', sans-serif; cursor: pointer; }
+
+    @keyframes flipIn { from { transform: rotateY(90deg); opacity:0; } to { transform: rotateY(0); opacity:1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+
+    /* Layout */
+    #app { display: flex; flex-direction: column; min-height: 100vh; }
+    .header { border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: rgba(15,14,23,.92); backdrop-filter: blur(12px); z-index: 10; }
+    .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
+    .logo .a { color: var(--accent); }
+    .logo .b { color: var(--text); }
+    .logo .c { color: var(--accent2); margin-left: 6px; font-size: 14px; }
+    .nav { display: flex; gap: 4px; padding: 10px 16px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav-btn { background: transparent; color: var(--muted); border: none; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 500; white-space: nowrap; transition: all .2s; }
+    .nav-btn.active { background: var(--accent); color: #fff; }
+    .content { padding: 24px 20px; max-width: 640px; margin: 0 auto; width: 100%; flex: 1; }
+
+    /* Badge */
+    .badge { display: inline-block; border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 500; }
+
+    /* Buttons */
+    .btn { border-radius: 12px; padding: 10px 20px; font-size: 14px; font-weight: 500; border: none; transition: all .2s; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #ff8c5a); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border) !important; }
+    .btn-danger { background: rgba(255,77,109,.13); color: #ff4d6d; border: 1px solid rgba(255,77,109,.27) !important; }
+    .btn-success { background: rgba(6,214,160,.13); color: var(--accent3); border: 1px solid rgba(6,214,160,.27) !important; }
+
+    /* Cards list */
+    .card-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; animation: slideUp .3s ease; }
+
+    /* Input */
+    .inp { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-size: 14px; outline: none; width: 100%; }
+    .inp:focus { border-color: var(--accent); }
+
+    /* Progress bar */
+    .progress-track { height: 4px; background: var(--border); border-radius: 99px; margin-bottom: 24px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width .4s; }
+
+    /* Flashcard */
+    .flashcard { border-radius: 20px; padding: 32px 24px; text-align: center; margin-bottom: 20px; animation: flipIn .35s ease; position: relative; transition: background .3s, border-color .3s; border: 1px solid var(--border); }
+
+    /* Stat boxes */
+    .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; flex: 1; min-width: 120px; }
+
+    /* Screen overlay */
+    #name-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+    .name-inner { text-align: center; animation: slideUp .5s ease; max-width: 360px; width: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- Name Screen -->
+<div id="name-screen">
+  <div class="name-inner">
+    <div style="font-size:56px;margin-bottom:16px">🃏</div>
+    <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:32px;margin-bottom:10px">
+      Bem-vinda ao <span style="color:var(--accent)">Flashcards</span>!
+    </h1>
+    <p style="color:var(--muted);margin-bottom:28px">Como você quer aparecer no ranking?</p>
+    <input id="name-input" class="inp" placeholder="Seu nome..." style="margin-bottom:16px;font-size:16px;padding:14px 18px" />
+    <button class="btn btn-primary" id="name-btn" style="width:100%;padding:14px;font-size:16px" disabled>Entrar →</button>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="logo"><span class="a">flash</span><span class="b">cards</span><span class="c">✦</span></div>
+    <span id="player-badge" class="badge"></span>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" data-tab="quiz">🎯 Quiz</button>
+    <button class="nav-btn" data-tab="cards">🗂 Cards</button>
+    <button class="nav-btn" data-tab="leaderboard">🏆 Ranking</button>
+    <button class="nav-btn" data-tab="stats">📊 Stats</button>
+  </div>
+  <div class="content" id="main-content"></div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────
+const S = {
+  playerName: "",
+  cards: [],
+  scores: [],
+  tab: "quiz",
+};
+
+const SEED = [
+  { id: 1, en: "Serendipity", pt: "Serendipidade / encontro feliz por acaso" },
+  { id: 2, en: "Ephemeral", pt: "Efêmero / que dura pouco tempo" },
+  { id: 3, en: "Resilience", pt: "Resiliência / capacidade de se recuperar" },
+  { id: 4, en: "Wanderlust", pt: "Vontade de viajar e explorar o mundo" },
+  { id: 5, en: "Ambiguous", pt: "Ambíguo / que tem mais de um sentido" },
+];
+
+// ─── LocalStorage (PWA uses localStorage instead of shared storage) ──
+function lsGet(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+
+// ─── Init ─────────────────────────────────────────────────────
+function init() {
+  const saved = lsGet("fc:cards");
+  S.cards = saved || [...SEED];
+  if (!saved) lsSet("fc:cards", S.cards);
+  S.scores = lsGet("fc:scores") || [];
+}
+
+// ─── Name Screen ─────────────────────────────────────────────
+const nameInput = document.getElementById("name-input");
+const nameBtn = document.getElementById("name-btn");
+nameInput.addEventListener("input", () => { nameBtn.disabled = !nameInput.value.trim(); });
+nameInput.addEventListener("keydown", e => { if (e.key === "Enter" && nameInput.value.trim()) enterApp(); });
+nameBtn.addEventListener("click", enterApp);
+
+function enterApp() {
+  S.playerName = nameInput.value.trim();
+  if (!S.playerName) return;
+  document.getElementById("name-screen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  document.getElementById("player-badge").textContent = "👤 " + S.playerName;
+  document.getElementById("player-badge").style.cssText = "background:rgba(168,85,247,.13);color:var(--purple);border:1px solid rgba(168,85,247,.27);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:500";
+  renderTab("quiz");
+}
+
+// ─── Nav ──────────────────────────────────────────────────────
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderTab(btn.dataset.tab);
+  });
+});
+
+function renderTab(tab) {
+  S.tab = tab;
+  const c = document.getElementById("main-content");
+  c.innerHTML = "";
+  if (tab === "quiz") renderQuiz(c);
+  else if (tab === "cards") renderCards(c);
+  else if (tab === "leaderboard") renderLeaderboard(c);
+  else if (tab === "stats") renderStats(c);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(([k, v]) => {
+    if (k === "style") e.style.cssText = v;
+    else if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, v);
+  });
+  children.forEach(ch => { if (ch == null) return; e.append(typeof ch === "string" ? ch : ch); });
+  return e;
+}
+function btn(label, variant, onClick, style = "") {
+  return el("button", { class: `btn btn-${variant}`, style, onClick }, label);
+}
+function inp(ph, val = "") {
+  const i = el("input", { class: "inp", placeholder: ph });
+  i.value = val;
+  return i;
+}
+function badge(text, color, bg, border) {
+  return el("span", { class: "badge", style: `color:${color};background:${bg};border:1px solid ${border}` }, text);
+}
+
+function normalize(str) {
+  return str.trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ");
+}
+function checkAnswer(typed, correct) {
+  const t = normalize(typed), c = normalize(correct);
+  if (t === c) return "exact";
+  const keywords = c.split(" ").filter(w => w.length > 3);
+  const matched = keywords.filter(w => t.includes(w));
+  if (keywords.length > 0 && matched.length / keywords.length >= 0.5) return "partial";
+  return "wrong";
+}
+
+// ─── Quiz ─────────────────────────────────────────────────────
+function renderQuiz(c) {
+  if (S.cards.length === 0) {
+    c.innerHTML = `<div style="text-align:center;padding-top:40px;animation:slideUp .4s ease">
+      <div style="font-size:72px;margin-bottom:16px">🎯</div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin-bottom:12px">Adicione cards primeiro!</h2>
+      <p style="color:var(--muted)">Vá para a aba 🗂 Cards e adicione palavras.</p></div>`;
+    return;
+  }
+  const state = { phase: "idle", queue: [], idx: 0, typed: "", verdict: null, pts: 0, streak: 0, answers: [] };
+
+  function showIdle() {
+    c.innerHTML = "";
+    c.style.animation = "slideUp .4s ease";
+    c.append(
+      el("div", { style: "text-align:center;padding-top:40px" },
+        el("div", { style: "font-size:72px;margin-bottom:16px" }, "🎯"),
+        el("h2", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:12px" }, "Pronta para praticar?"),
+        el("p", { style: "color:var(--muted);margin-bottom:8px" }, `${S.cards.length} flashcards disponíveis`),
+        el("p", { style: "color:var(--muted);font-size:13px;margin-bottom:32px" }, "Digite a tradução e acerte em sequência para bônus 🔥"),
+        btn("Iniciar Quiz →", "primary", startQuiz, "padding:14px 48px;font-size:17px;width:100%")
+      )
+    );
+  }
+
+  function startQuiz() {
+    state.queue = [...S.cards].sort(() => Math.random() - 0.5);
+    state.idx = 0; state.typed = ""; state.verdict = null;
+    state.pts = 0; state.streak = 0; state.answers = [];
+    state.phase = "playing";
+    showPlaying();
+  }
+
+  function showPlaying() {
+    c.innerHTML = "";
+    const card = state.queue[state.idx];
+    const progress = (state.idx / state.queue.length) * 100;
+
+    const progressFill = el("div", { class: "progress-fill", style: `width:${progress}%` });
+    const progressRow = el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:14px" },
+      el("span", { style: "color:var(--muted);font-size:13px" }, `${state.idx + 1} / ${state.queue.length}`),
+      el("div", { style: "display:flex;gap:8px;align-items:center" },
+        ...(state.streak >= 2 ? [badge(`🔥 ×${state.streak} streak`, "var(--accent2)", "rgba(255,209,102,.13)", "rgba(255,209,102,.27)")] : []),
+        badge(`${state.pts} pts`, "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")
+      )
+    );
+
+    const flashcard = el("div", { class: "flashcard", style: "background:var(--card)" },
+      el("div", { style: "position:absolute;top:14px;right:14px" },
+        badge("EN", "var(--purple)", "rgba(168,85,247,.13)", "rgba(168,85,247,.27)")
+      ),
+      el("div", { style: "font-size:12px;color:var(--muted);margin-bottom:12px;font-family:'Syne',sans-serif;letter-spacing:2px;text-transform:uppercase" }, "Como se diz em português?"),
+      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:34px;margin-bottom:20px" }, card.en)
+    );
+
+    const answerInput = inp("Digite a tradução em português...");
+    answerInput.style.cssText += ";font-size:15px;padding:13px 16px";
+    const submitBtn = btn("→", "primary", doSubmit, "padding:13px 20px;font-size:16px;white-space:nowrap");
+    submitBtn.disabled = true;
+    answerInput.addEventListener("input", () => { submitBtn.disabled = !answerInput.value.trim(); });
+    answerInput.addEventListener("keydown", e => { if (e.key === "Enter" && answerInput.value.trim()) doSubmit(); });
+
+    const inputRow = el("div", { style: "display:flex;gap:10px" }, answerInput, submitBtn);
+
+    c.append(progressRow, el("div", { class: "progress-track" }, progressFill), flashcard, inputRow);
+    setTimeout(() => answerInput.focus(), 100);
+
+    function doSubmit() {
+      state.typed = answerInput.value;
+      state.verdict = checkAnswer(state.typed, card.pt);
+      state.phase = "result";
+      showResult();
+    }
+  }
+
+  function showResult() {
+    c.innerHTML = "";
+    const card = state.queue[state.idx];
+    const v = state.verdict;
+    const cfg = {
+      exact:   { color: "var(--accent3)", bg: "rgba(6,214,160,.1)",   border: "rgba(6,214,160,.4)",   icon: "✓", label: "Perfeito!" },
+      partial: { color: "var(--accent2)", bg: "rgba(255,209,102,.1)", border: "rgba(255,209,102,.4)", icon: "~", label: "Quase lá!" },
+      wrong:   { color: "#ff4d6d",        bg: "rgba(255,77,109,.1)",  border: "rgba(255,77,109,.4)",  icon: "✗", label: "Não foi dessa vez" },
+    }[v];
+
+    const progress = (state.idx / state.queue.length) * 100;
+    const progressFill = el("div", { class: "progress-fill", style: `width:${progress}%` });
+    const progressRow = el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:14px" },
+      el("span", { style: "color:var(--muted);font-size:13px" }, `${state.idx + 1} / ${state.queue.length}`),
+      el("div", { style: "display:flex;gap:8px;align-items:center" },
+        ...(state.streak >= 2 ? [badge(`🔥 ×${state.streak} streak`, "var(--accent2)", "rgba(255,209,102,.13)", "rgba(255,209,102,.27)")] : []),
+        badge(`${state.pts} pts`, "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")
+      )
+    );
+
+    const flashcard = el("div", { class: "flashcard", style: `background:${cfg.bg};border-color:${cfg.border}` },
+      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:16px" }, card.en),
+      el("div", { style: `background:var(--surface);border-radius:12px;padding:12px 16px;margin-bottom:10px;font-size:15px` },
+        el("span", { style: "color:var(--muted);font-size:12px;display:block;margin-bottom:4px" }, "Sua resposta"),
+        state.typed
+      ),
+      el("div", { style: `background:var(--surface);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:15px;color:var(--accent2)` },
+        el("span", { style: "color:var(--muted);font-size:12px;display:block;margin-bottom:4px" }, "Resposta correta"),
+        card.pt
+      ),
+      el("div", { style: `font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:${cfg.color}` },
+        `${cfg.icon} ${cfg.label}`,
+        ...(v !== "wrong" ? [el("span", { style: "font-size:14px;margin-left:8px;color:var(--accent2)" }, `+${state.streak >= 2 ? 20 : 10} pts`)] : [])
+      )
+    );
+
+    const btnRow = el("div", { style: "display:flex;gap:10px;animation:slideUp .25s ease" });
+    if (v === "wrong") {
+      btnRow.append(btn("Sabia sim ✓", "success", () => doNext("partial"), "flex:1;padding:14px;font-size:14px"));
+    }
+    btnRow.append(btn(state.idx + 1 >= state.queue.length ? "Ver resultado 🏁" : "Próxima →", "primary", () => doNext(), `flex:1;padding:14px;font-size:15px`));
+
+    c.append(progressRow, el("div", { class: "progress-track" }, progressFill), flashcard, btnRow);
+
+    function doNext(override) {
+      const finalV = override || v;
+      const correct = finalV === "exact" || finalV === "partial";
+      const bonus = correct ? (state.streak >= 2 ? 20 : 10) : 0;
+      state.streak = correct ? state.streak + 1 : 0;
+      state.pts += bonus;
+      state.answers.push({ card, correct, typed: state.typed });
+      if (state.idx + 1 >= state.queue.length) {
+        saveScore(state.pts);
+        showDone();
+      } else {
+        state.idx++; state.typed = ""; state.verdict = null; state.phase = "playing";
+        showPlaying();
+      }
+    }
+  }
+
+  function showDone() {
+    c.innerHTML = "";
+    const emoji = state.pts >= 60 ? "🏆" : state.pts >= 30 ? "⭐" : "💪";
+    const resultsDiv = el("div", { style: "display:flex;flex-direction:column;gap:8px;margin-bottom:28px" });
+    state.answers.forEach(a => {
+      resultsDiv.append(
+        el("div", { style: `background:${a.correct ? "rgba(6,214,160,.07)" : "rgba(255,77,109,.07)"};border:1px solid ${a.correct ? "rgba(6,214,160,.25)" : "rgba(255,77,109,.25)"};border-radius:12px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center` },
+          el("div", {},
+            el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:14px" }, a.card.en),
+            el("div", { style: `font-size:12px;color:${a.correct ? "var(--accent3)" : "#ff4d6d"};margin-top:2px` }, a.typed)
+          ),
+          el("div", { style: "font-size:18px" }, a.correct ? "✅" : "❌")
+        )
+      );
+    });
+
+    c.append(
+      el("div", { style: "text-align:center;padding-top:24px;animation:slideUp .4s ease" },
+        el("div", { style: "font-size:60px;margin-bottom:8px" }, emoji),
+        el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:36px;color:var(--accent2);margin-bottom:6px" }, `${state.pts} pts`),
+        el("p", { style: "color:var(--muted);margin-bottom:24px" }, "Rodada concluída! Score salvo ✅"),
+        resultsDiv,
+        btn("Jogar de novo 🔄", "primary", startQuiz, "width:100%;padding:14px;font-size:15px")
+      )
+    );
+  }
+
+  showIdle();
+}
+
+// ─── Save Score ───────────────────────────────────────────────
+function saveScore(pts) {
+  const existing = S.scores.findIndex(x => x.name === S.playerName);
+  if (existing >= 0) {
+    S.scores[existing].total += pts;
+    S.scores[existing].rounds += 1;
+  } else {
+    S.scores.push({ name: S.playerName, total: pts, rounds: 1 });
+  }
+  S.scores.sort((a, b) => b.total - a.total);
+  lsSet("fc:scores", S.scores);
+}
+
+// ─── Cards Tab ────────────────────────────────────────────────
+function renderCards(c) {
+  function rebuild() {
+    c.innerHTML = "";
+    c.style.animation = "slideUp .3s ease";
+
+    const enInp = inp("Palavra em inglês");
+    const ptInp = inp("Tradução em português");
+    const addBtn = btn("+ Adicionar", "primary", doAdd, "width:100%;margin-bottom:28px");
+    addBtn.disabled = true;
+    [enInp, ptInp].forEach(i => i.addEventListener("input", () => { addBtn.disabled = !(enInp.value.trim() && ptInp.value.trim()); }));
+
+    function doAdd() {
+      if (!enInp.value.trim() || !ptInp.value.trim()) return;
+      S.cards.push({ id: Date.now(), en: enInp.value.trim(), pt: ptInp.value.trim() });
+      lsSet("fc:cards", S.cards);
+      rebuild();
+    }
+
+    const headerRow = el("div", { style: "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap" }, enInp, ptInp);
+    const sectionLabel = el("h3", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:16px;color:var(--muted);display:flex;gap:8px;align-items:center" },
+      "Seus cards ",
+      badge(`${S.cards.length}`, "var(--purple)", "rgba(168,85,247,.13)", "rgba(168,85,247,.27)")
+    );
+
+    const list = el("div");
+    S.cards.forEach(card => {
+      const row = el("div", { class: "card-box" });
+      const info = el("div", { style: "flex:1" },
+        el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:15px" }, card.en),
+        el("div", { style: "color:var(--muted);font-size:13px;margin-top:2px" }, card.pt)
+      );
+      const editBtn = btn("✏️", "ghost", () => showEdit(row, card), "padding:7px 12px");
+      const delBtn = btn("🗑", "danger", () => { S.cards = S.cards.filter(c => c.id !== card.id); lsSet("fc:cards", S.cards); rebuild(); }, "padding:7px 12px");
+      row.append(info, editBtn, delBtn);
+      list.append(row);
+    });
+
+    if (S.cards.length === 0) {
+      list.append(el("div", { style: "color:var(--muted);text-align:center;padding:40px 0" }, "Nenhum card ainda. Adicione o primeiro! ☝️"));
+    }
+
+    c.append(
+      el("h3", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:20px;margin-bottom:16px" }, "Adicionar flashcard"),
+      headerRow, addBtn, sectionLabel, list
+    );
+  }
+
+  function showEdit(row, card) {
+    row.innerHTML = "";
+    const eEn = inp("Inglês", card.en); eEn.style.flex = "1";
+    const ePt = inp("Português", card.pt); ePt.style.flex = "1";
+    const saveB = btn("Salvar", "success", () => {
+      card.en = eEn.value.trim() || card.en;
+      card.pt = ePt.value.trim() || card.pt;
+      lsSet("fc:cards", S.cards); rebuild();
+    }, "padding:10px 14px;white-space:nowrap");
+    const cancelB = btn("✕", "ghost", rebuild, "padding:10px 12px");
+    row.append(eEn, ePt, saveB, cancelB);
+  }
+
+  rebuild();
+}
+
+// ─── Leaderboard ──────────────────────────────────────────────
+function renderLeaderboard(c) {
+  c.style.animation = "slideUp .3s ease";
+  const medals = ["🥇","🥈","🥉"];
+  const header = el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:24px" },
+    el("h3", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:22px" }, "Ranking Geral 🏆"),
+    btn("Atualizar ↻", "ghost", () => renderTab("leaderboard"), "padding:8px 14px;font-size:12px")
+  );
+  c.append(header);
+  if (S.scores.length === 0) {
+    c.append(el("div", { style: "color:var(--muted);text-align:center;padding:40px 0" }, "Nenhum score ainda. Jogue o quiz! 🎯"));
+    return;
+  }
+  S.scores.forEach((s, i) => {
+    const isMe = s.name === S.playerName;
+    const row = el("div", { style: `background:${isMe ? "rgba(255,107,53,.1)" : "var(--card)"};border:1px solid ${isMe ? "rgba(255,107,53,.4)" : "var(--border)"};border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:10px;animation:slideUp ${.2 + i * .07}s ease` },
+      el("div", { style: "font-size:22px;width:32px;text-align:center" }, medals[i] || `${i+1}`),
+      el("div", { style: "flex:1" },
+        el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:16px;display:flex;gap:8px;align-items:center" },
+          s.name,
+          ...(isMe ? [badge("você", "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")] : [])
+        ),
+        el("div", { style: "color:var(--muted);font-size:12px;margin-top:2px" }, `${s.rounds} rodada${s.rounds !== 1 ? "s" : ""}`)
+      ),
+      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent2)" }, `${s.total}`)
+    );
+    c.append(row);
+  });
+}
+
+// ─── Stats ────────────────────────────────────────────────────
+function renderStats(c) {
+  c.style.animation = "slideUp .3s ease";
+  const my = S.scores.find(s => s.name === S.playerName);
+  const myRank = S.scores.findIndex(s => s.name === S.playerName) + 1;
+
+  c.append(el("h3", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:24px" }, "Suas estatísticas 📊"));
+
+  if (!my) {
+    c.append(el("div", { style: "color:var(--muted);text-align:center;padding:40px 0" }, "Jogue o quiz para ver suas stats! 🎯"));
+  } else {
+    const avg = Math.round(my.total / my.rounds);
+    function statBox(label, val, color) {
+      return el("div", { class: "stat-box" },
+        el("div", { style: `color:${color};font-family:'Syne',sans-serif;font-weight:800;font-size:32px` }, `${val}`),
+        el("div", { style: "color:var(--muted);font-size:13px;margin-top:4px" }, label)
+      );
+    }
+    const row1 = el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px" },
+      statBox("Pontos totais", my.total, "var(--accent2)"),
+      statBox("Rodadas", my.rounds, "var(--accent3)")
+    );
+    const row2 = el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px" },
+      statBox("Média por rodada", avg, "var(--purple)"),
+      statBox("Posição no ranking", myRank > 0 ? `#${myRank}` : "—", "var(--accent)")
+    );
+    c.append(row1, row2);
+  }
+
+  c.append(el("div", { class: "stat-box" },
+    el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;margin-bottom:10px" }, "Banco de palavras 🗂"),
+    el("div", { style: "color:var(--accent2);font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:4px" }, `${S.cards.length}`),
+    el("div", { style: "color:var(--muted);font-size:13px" }, "cards disponíveis para praticar")
+  ));
+}
+
+// ─── Service Worker ───────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+
+// ─── Start ────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
