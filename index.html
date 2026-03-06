@@ -94,17 +94,17 @@ const SUPA_KEY = "sb_publishable_mcZTOQgWFAIIin1gk5SMzw_G7ldU0o3";
 
 async function dbGet(path) {
   try {
-    const r = await fetch(${SUPA_URL}/rest/v1/${path}, {
-      headers: { "apikey": SUPA_KEY, "Authorization": Bearer ${SUPA_KEY} }
+    const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+      headers: { "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}` }
     });
     return r.ok ? await r.json() : [];
   } catch { return []; }
 }
 async function dbPost(table, body) {
   try {
-    const r = await fetch(${SUPA_URL}/rest/v1/${table}, {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
       method: "POST",
-      headers: { "apikey": SUPA_KEY, "Authorization": Bearer ${SUPA_KEY}, "Content-Type": "application/json", "Prefer": "return=representation" },
+      headers: { "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", "Prefer": "return=representation" },
       body: JSON.stringify(body)
     });
     return r.ok ? await r.json() : null;
@@ -112,9 +112,9 @@ async function dbPost(table, body) {
 }
 async function dbPatch(table, match, body) {
   try {
-    const r = await fetch(${SUPA_URL}/rest/v1/${table}?${match}, {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${match}`, {
       method: "PATCH",
-      headers: { "apikey": SUPA_KEY, "Authorization": Bearer ${SUPA_KEY}, "Content-Type": "application/json", "Prefer": "return=representation" },
+      headers: { "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", "Prefer": "return=representation" },
       body: JSON.stringify(body)
     });
     return r.ok ? await r.json() : null;
@@ -122,9 +122,9 @@ async function dbPatch(table, match, body) {
 }
 async function dbDelete(table, match) {
   try {
-    await fetch(${SUPA_URL}/rest/v1/${table}?${match}, {
+    await fetch(`${SUPA_URL}/rest/v1/${table}?${match}`, {
       method: "DELETE",
-      headers: { "apikey": SUPA_KEY, "Authorization": Bearer ${SUPA_KEY} }
+      headers: { "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}` }
     });
   } catch {}
 }
@@ -201,7 +201,7 @@ function el(tag, attrs, ...children) {
   return e;
 }
 function btn(label, variant, onClick, style = "") {
-  return el("button", { class: btn btn-${variant}, style, onClick }, label);
+  return el("button", { class: `btn btn-${variant}`, style, onClick }, label);
 }
 function inp(ph, val = "") {
   const i = el("input", { class: "inp", placeholder: ph });
@@ -209,7 +209,7 @@ function inp(ph, val = "") {
   return i;
 }
 function badge(text, color, bg, border) {
-  return el("span", { class: "badge", style: color:${color};background:${bg};border:1px solid ${border} }, text);
+  return el("span", { class: "badge", style: `color:${color};background:${bg};border:1px solid ${border}` }, text);
 }
 function normalize(str) {
   return str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ");
@@ -227,7 +227,7 @@ function checkAnswer(typed, correct) {
 async function saveScore(pts) {
   const existing = S.scores.find(x => x.name === S.playerName);
   if (existing) {
-    const updated = await dbPatch("scores", name=eq.${encodeURIComponent(S.playerName)}, { total: existing.total + pts, rounds: existing.rounds + 1 });
+    const updated = await dbPatch("scores", `name=eq.${encodeURIComponent(S.playerName)}`, { total: existing.total + pts, rounds: existing.rounds + 1 });
     if (updated && updated[0]) { existing.total += pts; existing.rounds += 1; }
   } else {
     const created = await dbPost("scores", { name: S.playerName, total: pts, rounds: 1 });
@@ -239,7 +239,7 @@ async function saveScore(pts) {
 // ─── Quiz ─────────────────────────────────────────────────────
 function renderQuiz(c) {
   if (S.cards.length === 0) {
-    c.innerHTML = <div style="text-align:center;padding-top:40px"><div style="font-size:72px;margin-bottom:16px">🎯</div><h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin-bottom:12px">Adicione cards primeiro!</h2><p style="color:var(--muted)">Vá para a aba 🗂 Cards.</p></div>;
+    c.innerHTML = `<div style="text-align:center;padding-top:40px"><div style="font-size:72px;margin-bottom:16px">🎯</div><h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;margin-bottom:12px">Adicione cards primeiro!</h2><p style="color:var(--muted)">Vá para a aba 🗂 Cards.</p></div>`;
     return;
   }
   const state = { phase: "idle", queue: [], idx: 0, typed: "", verdict: null, pts: 0, streak: 0, answers: [] };
@@ -249,7 +249,7 @@ function renderQuiz(c) {
     c.append(el("div", { style: "text-align:center;padding-top:40px;animation:slideUp .4s ease" },
       el("div", { style: "font-size:72px;margin-bottom:16px" }, "🎯"),
       el("h2", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:12px" }, "Pronta para praticar?"),
-      el("p", { style: "color:var(--muted);margin-bottom:8px" }, ${S.cards.length} flashcards disponíveis),
+      el("p", { style: "color:var(--muted);margin-bottom:8px" }, `${S.cards.length} flashcards disponíveis`),
       el("p", { style: "color:var(--muted);font-size:13px;margin-bottom:32px" }, "Digite a tradução e acerte em sequência para bônus 🔥"),
       btn("Iniciar Quiz →", "primary", startQuiz, "padding:14px 48px;font-size:17px;width:100%")
     ));
@@ -266,10 +266,10 @@ function renderQuiz(c) {
     const card = state.queue[state.idx];
     const progress = (state.idx / state.queue.length) * 100;
     const progressRow = el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:14px" },
-      el("span", { style: "color:var(--muted);font-size:13px" }, ${state.idx + 1} / ${state.queue.length}),
+      el("span", { style: "color:var(--muted);font-size:13px" }, `${state.idx + 1} / ${state.queue.length}`),
       el("div", { style: "display:flex;gap:8px;align-items:center" },
-        ...(state.streak >= 2 ? [badge(🔥 ×${state.streak} streak, "var(--accent2)", "rgba(255,209,102,.13)", "rgba(255,209,102,.27)")] : []),
-        badge(${state.pts} pts, "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")
+        ...(state.streak >= 2 ? [badge(`🔥 ×${state.streak} streak`, "var(--accent2)", "rgba(255,209,102,.13)", "rgba(255,209,102,.27)")] : []),
+        badge(`${state.pts} pts`, "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")
       )
     );
     const flashcard = el("div", { class: "flashcard", style: "background:var(--card)" },
@@ -283,7 +283,7 @@ function renderQuiz(c) {
     submitBtn.disabled = true;
     answerInput.addEventListener("input", () => { submitBtn.disabled = !answerInput.value.trim(); });
     answerInput.addEventListener("keydown", e => { if (e.key === "Enter" && answerInput.value.trim()) doSubmit(); });
-    c.append(progressRow, el("div", { class: "progress-track" }, el("div", { class: "progress-fill", style: width:${progress}% })), flashcard, el("div", { style: "display:flex;gap:10px" }, answerInput, submitBtn));
+    c.append(progressRow, el("div", { class: "progress-track" }, el("div", { class: "progress-fill", style: `width:${progress}%` })), flashcard, el("div", { style: "display:flex;gap:10px" }, answerInput, submitBtn));
     setTimeout(() => answerInput.focus(), 100);
     function doSubmit() { state.typed = answerInput.value; state.verdict = checkAnswer(state.typed, card.pt); state.phase = "result"; showResult(); }
   }
@@ -299,27 +299,27 @@ function renderQuiz(c) {
     }[v];
     const progress = (state.idx / state.queue.length) * 100;
     const progressRow = el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:14px" },
-      el("span", { style: "color:var(--muted);font-size:13px" }, ${state.idx + 1} / ${state.queue.length}),
+      el("span", { style: "color:var(--muted);font-size:13px" }, `${state.idx + 1} / ${state.queue.length}`),
       el("div", { style: "display:flex;gap:8px;align-items:center" },
-        ...(state.streak >= 2 ? [badge(🔥 ×${state.streak} streak, "var(--accent2)", "rgba(255,209,102,.13)", "rgba(255,209,102,.27)")] : []),
-        badge(${state.pts} pts, "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")
+        ...(state.streak >= 2 ? [badge(`🔥 ×${state.streak} streak`, "var(--accent2)", "rgba(255,209,102,.13)", "rgba(255,209,102,.27)")] : []),
+        badge(`${state.pts} pts`, "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")
       )
     );
-    const flashcard = el("div", { class: "flashcard", style: background:${cfg.bg};border-color:${cfg.border} },
+    const flashcard = el("div", { class: "flashcard", style: `background:${cfg.bg};border-color:${cfg.border}` },
       el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:16px" }, card.en),
       el("div", { style: "background:var(--surface);border-radius:12px;padding:12px 16px;margin-bottom:10px;font-size:15px" },
         el("span", { style: "color:var(--muted);font-size:12px;display:block;margin-bottom:4px" }, "Sua resposta"), state.typed),
       el("div", { style: "background:var(--surface);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-size:15px;color:var(--accent2)" },
         el("span", { style: "color:var(--muted);font-size:12px;display:block;margin-bottom:4px" }, "Resposta correta"), card.pt),
-      el("div", { style: font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:${cfg.color} },
-        ${cfg.icon} ${cfg.label},
-        ...(v !== "wrong" ? [el("span", { style: "font-size:14px;margin-left:8px;color:var(--accent2)" }, +${state.streak >= 2 ? 20 : 10} pts)] : [])
+      el("div", { style: `font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:${cfg.color}` },
+        `${cfg.icon} ${cfg.label}`,
+        ...(v !== "wrong" ? [el("span", { style: "font-size:14px;margin-left:8px;color:var(--accent2)" }, `+${state.streak >= 2 ? 20 : 10} pts`)] : [])
       )
     );
     const btnRow = el("div", { style: "display:flex;gap:10px;animation:slideUp .25s ease" });
     if (v === "wrong") btnRow.append(btn("Sabia sim ✓", "success", () => doNext("partial"), "flex:1;padding:14px;font-size:14px"));
     btnRow.append(btn(state.idx + 1 >= state.queue.length ? "Ver resultado 🏁" : "Próxima →", "primary", () => doNext(), "flex:1;padding:14px;font-size:15px"));
-    c.append(progressRow, el("div", { class: "progress-track" }, el("div", { class: "progress-fill", style: width:${progress}% })), flashcard, btnRow);
+    c.append(progressRow, el("div", { class: "progress-track" }, el("div", { class: "progress-fill", style: `width:${progress}%` })), flashcard, btnRow);
     function doNext(override) {
       const finalV = override || v;
       const correct = finalV === "exact" || finalV === "partial";
@@ -333,7 +333,7 @@ function renderQuiz(c) {
   }
 
   async function showSaving() {
-    c.innerHTML = <div style="text-align:center;padding-top:60px"><div style="color:var(--accent);font-family:'Syne',sans-serif;font-size:20px;animation:pulse 1s infinite">Salvando pontuação...</div></div>;
+    c.innerHTML = `<div style="text-align:center;padding-top:60px"><div style="color:var(--accent);font-family:'Syne',sans-serif;font-size:20px;animation:pulse 1s infinite">Salvando pontuação...</div></div>`;
     await saveScore(state.pts);
     showDone();
   }
@@ -343,17 +343,17 @@ function renderQuiz(c) {
     const emoji = state.pts >= 60 ? "🏆" : state.pts >= 30 ? "⭐" : "💪";
     const resultsDiv = el("div", { style: "display:flex;flex-direction:column;gap:8px;margin-bottom:28px" });
     state.answers.forEach(a => {
-      resultsDiv.append(el("div", { style: background:${a.correct ? "rgba(6,214,160,.07)" : "rgba(255,77,109,.07)"};border:1px solid ${a.correct ? "rgba(6,214,160,.25)" : "rgba(255,77,109,.25)"};border-radius:12px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center },
+      resultsDiv.append(el("div", { style: `background:${a.correct ? "rgba(6,214,160,.07)" : "rgba(255,77,109,.07)"};border:1px solid ${a.correct ? "rgba(6,214,160,.25)" : "rgba(255,77,109,.25)"};border-radius:12px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center` },
         el("div", {},
           el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:14px" }, a.card.en),
-          el("div", { style: font-size:12px;color:${a.correct ? "var(--accent3)" : "#ff4d6d"};margin-top:2px }, a.typed)
+          el("div", { style: `font-size:12px;color:${a.correct ? "var(--accent3)" : "#ff4d6d"};margin-top:2px` }, a.typed)
         ),
         el("div", { style: "font-size:18px" }, a.correct ? "✅" : "❌")
       ));
     });
     c.append(el("div", { style: "text-align:center;padding-top:24px;animation:slideUp .4s ease" },
       el("div", { style: "font-size:60px;margin-bottom:8px" }, emoji),
-      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:36px;color:var(--accent2);margin-bottom:6px" }, ${state.pts} pts),
+      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:36px;color:var(--accent2);margin-bottom:6px" }, `${state.pts} pts`),
       el("p", { style: "color:var(--muted);margin-bottom:24px" }, "Rodada concluída! Score salvo ✅"),
       resultsDiv,
       btn("Jogar de novo 🔄", "primary", startQuiz, "width:100%;padding:14px;font-size:15px")
@@ -380,7 +380,7 @@ function renderCards(c) {
       rebuild();
     }
     const sectionLabel = el("h3", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:16px;color:var(--muted);display:flex;gap:8px;align-items:center" },
-      "Seus cards ", badge(${S.cards.length}, "var(--purple)", "rgba(168,85,247,.13)", "rgba(168,85,247,.27)")
+      "Seus cards ", badge(`${S.cards.length}`, "var(--purple)", "rgba(168,85,247,.13)", "rgba(168,85,247,.27)")
     );
     const list = el("div");
     S.cards.forEach(card => {
@@ -391,7 +391,7 @@ function renderCards(c) {
       );
       const editBtn = btn("✏️", "ghost", () => showEdit(row, card), "padding:7px 12px");
       const delBtn = btn("🗑", "danger", async () => {
-        await dbDelete("cards", id=eq.${card.id});
+        await dbDelete("cards", `id=eq.${card.id}`);
         S.cards = S.cards.filter(c => c.id !== card.id);
         rebuild();
       }, "padding:7px 12px");
@@ -412,7 +412,7 @@ function renderCards(c) {
     const saveB = btn("Salvar", "success", async () => {
       const newEn = eEn.value.trim() || card.en;
       const newPt = ePt.value.trim() || card.pt;
-      await dbPatch("cards", id=eq.${card.id}, { en: newEn, pt: newPt });
+      await dbPatch("cards", `id=eq.${card.id}`, { en: newEn, pt: newPt });
       card.en = newEn; card.pt = newPt;
       rebuild();
     }, "padding:10px 14px;white-space:nowrap");
@@ -436,15 +436,15 @@ function renderLeaderboard(c) {
   if (S.scores.length === 0) { c.append(el("div", { style: "color:var(--muted);text-align:center;padding:40px 0" }, "Nenhum score ainda. Jogue o quiz! 🎯")); return; }
   S.scores.forEach((s, i) => {
     const isMe = s.name === S.playerName;
-    c.append(el("div", { style: background:${isMe ? "rgba(255,107,53,.1)" : "var(--card)"};border:1px solid ${isMe ? "rgba(255,107,53,.4)" : "var(--border)"};border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:10px;animation:slideUp ${.2 + i * .07}s ease },
-      el("div", { style: "font-size:22px;width:32px;text-align:center" }, medals[i] || ${i+1}),
+    c.append(el("div", { style: `background:${isMe ? "rgba(255,107,53,.1)" : "var(--card)"};border:1px solid ${isMe ? "rgba(255,107,53,.4)" : "var(--border)"};border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:10px;animation:slideUp ${.2 + i * .07}s ease` },
+      el("div", { style: "font-size:22px;width:32px;text-align:center" }, medals[i] || `${i+1}`),
       el("div", { style: "flex:1" },
         el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;font-size:16px;display:flex;gap:8px;align-items:center" },
           s.name, ...(isMe ? [badge("você", "var(--accent)", "rgba(255,107,53,.13)", "rgba(255,107,53,.27)")] : [])
         ),
-        el("div", { style: "color:var(--muted);font-size:12px;margin-top:2px" }, ${s.rounds} rodada${s.rounds !== 1 ? "s" : ""})
+        el("div", { style: "color:var(--muted);font-size:12px;margin-top:2px" }, `${s.rounds} rodada${s.rounds !== 1 ? "s" : ""}`)
       ),
-      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent2)" }, ${s.total})
+      el("div", { style: "font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--accent2)" }, `${s.total}`)
     ));
   });
 }
@@ -459,18 +459,18 @@ function renderStats(c) {
     const avg = Math.round(my.total / my.rounds);
     function statBox(label, val, color) {
       return el("div", { class: "stat-box" },
-        el("div", { style: color:${color};font-family:'Syne',sans-serif;font-weight:800;font-size:32px }, ${val}),
+        el("div", { style: `color:${color};font-family:'Syne',sans-serif;font-weight:800;font-size:32px` }, `${val}`),
         el("div", { style: "color:var(--muted);font-size:13px;margin-top:4px" }, label)
       );
     }
     c.append(
       el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px" }, statBox("Pontos totais", my.total, "var(--accent2)"), statBox("Rodadas", my.rounds, "var(--accent3)")),
-      el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px" }, statBox("Média por rodada", avg, "var(--purple)"), statBox("Posição no ranking", myRank > 0 ? #${myRank} : "—", "var(--accent)"))
+      el("div", { style: "display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px" }, statBox("Média por rodada", avg, "var(--purple)"), statBox("Posição no ranking", myRank > 0 ? `#${myRank}` : "—", "var(--accent)"))
     );
   }
   c.append(el("div", { class: "stat-box" },
     el("div", { style: "font-family:'Syne',sans-serif;font-weight:700;margin-bottom:10px" }, "Banco de palavras 🗂"),
-    el("div", { style: "color:var(--accent2);font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:4px" }, ${S.cards.length}),
+    el("div", { style: "color:var(--accent2);font-family:'Syne',sans-serif;font-weight:800;font-size:28px;margin-bottom:4px" }, `${S.cards.length}`),
     el("div", { style: "color:var(--muted);font-size:13px" }, "cards disponíveis para praticar")
   ));
 }
